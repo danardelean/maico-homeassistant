@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Maico REC DUO WiFi",
+        "description": "Enter your Maico account credentials (same as the mobile app).",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "client_secret": "Client Secret"
+        }
+      },
+      "auth_code": {
+        "title": "Maico REC DUO WiFi - Authorization",
+        "description": "Direct login is not available. Please use the authorization code flow:\n1. Open [this login page]({login_url}) in your browser\n2. Sign in with your Maico credentials\n3. After login, the browser will try to open a `myrecvmc://` URL and show an error\n4. Copy the **entire URL** from the address bar and paste it below",
+        "data": {
+          "auth_code": "Authorization Code or Full Redirect URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid credentials. Please try again.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
+    }
+  },
+  "entity": {
+    "fan": {
+      "ventilation": {
+        "name": "Ventilation"
+      }
+    },
+    "sensor": {
+      "temperature": { "name": "Temperature" },
+      "humidity": { "name": "Humidity" },
+      "air_quality": { "name": "Air Quality" },
+      "air_flow": { "name": "Air Flow" },
+      "filter_hours": { "name": "Filter Hours" },
+      "filter_threshold": { "name": "Filter Threshold" },
+      "firmware": { "name": "Firmware Version" },
+      "system_error": { "name": "System Error" }
+    },
+    "binary_sensor": {
+      "online": { "name": "Online" },
+      "filter_warning": { "name": "Filter Warning" },
+      "is_master": { "name": "Master Device" }
+    },
+    "select": {
+      "operating_mode": { "name": "Operating Mode" }
+    },
+    "number": {
+      "led_brightness": { "name": "LED Brightness" },
+      "humidity_threshold": { "name": "Humidity Threshold" },
+      "low_speed": { "name": "Night Mode Speed" },
+      "boost_duration": { "name": "Boost Duration" },
+      "sleep_duration": { "name": "Sleep Duration" }
+    },
+    "switch": {
+      "aqs_threshold": { "name": "Air Quality Threshold" },
+      "humidity_threshold_active": { "name": "Humidity Threshold" },
+      "boost_mode": { "name": "Boost Mode" },
+      "sleep_mode": { "name": "Sleep Mode" }
+    },
+    "button": {
+      "clear_filter": { "name": "Clear Filter" },
+      "reboot": { "name": "Reboot the device" }
+    }
+  }
+}
