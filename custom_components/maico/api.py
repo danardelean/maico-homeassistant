@@ -336,8 +336,8 @@ class MaicoApiClient:
                 if 0 <= aqs <= 500:  # filter startup sentinel
                     device.air_quality = aqs
             if "rpm" in value:
-                rpm = value["rpm"] / 10
-                if 0 <= rpm <= 5000:  # filter startup sentinel
+                rpm = value["rpm"]
+                if 0 <= rpm <= 50000:  # filter startup sentinel
                     device.air_flow = rpm
             if "mode" in value:
                 device.mode = max(0, min(16, value["mode"]))

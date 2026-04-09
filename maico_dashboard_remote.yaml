@@ -19,7 +19,7 @@ views:
                   - type: custom:mushroom-template-card
                     entity: fan.albero_ventilation
                     primary: Albero
-                    secondary: "⚡{{ ((state_attr('fan.albero_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.albero_temperature') }}°C · 💧{{ states('sensor.albero_humidity') }}% · 💨{{ states('sensor.albero_air_flow') }} m³/h"
+                    secondary: "⚡{{ ((state_attr('fan.albero_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.albero_temperature') }}°C · 💧{{ states('sensor.albero_humidity') }}% · 💨{{ states('sensor.albero_air_flow') }} RPM"
                     icon: mdi:fan
                     icon_color: "{{ 'green' if is_state('fan.albero_ventilation', 'on') else 'grey' }}"
                     tap_action:
@@ -100,7 +100,7 @@ views:
                   - type: custom:mushroom-template-card
                     entity: fan.alcova_ventilation
                     primary: Alcova
-                    secondary: "⚡{{ ((state_attr('fan.alcova_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.alcova_temperature') }}°C · 💧{{ states('sensor.alcova_humidity') }}% · 💨{{ states('sensor.alcova_air_flow') }} m³/h"
+                    secondary: "⚡{{ ((state_attr('fan.alcova_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.alcova_temperature') }}°C · 💧{{ states('sensor.alcova_humidity') }}% · 💨{{ states('sensor.alcova_air_flow') }} RPM"
                     icon: mdi:fan
                     icon_color: "{{ 'green' if is_state('fan.alcova_ventilation', 'on') else 'grey' }}"
                     tap_action:
@@ -183,7 +183,7 @@ views:
                   - type: custom:mushroom-template-card
                     entity: fan.grotta_ventilation
                     primary: Grotta
-                    secondary: "⚡{{ ((state_attr('fan.grotta_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.grotta_temperature') }}°C · 💧{{ states('sensor.grotta_humidity') }}% · 💨{{ states('sensor.grotta_air_flow') }} m³/h"
+                    secondary: "⚡{{ ((state_attr('fan.grotta_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.grotta_temperature') }}°C · 💧{{ states('sensor.grotta_humidity') }}% · 💨{{ states('sensor.grotta_air_flow') }} RPM"
                     icon: mdi:fan
                     icon_color: "{{ 'green' if is_state('fan.grotta_ventilation', 'on') else 'grey' }}"
                     tap_action:
@@ -264,7 +264,7 @@ views:
                   - type: custom:mushroom-template-card
                     entity: fan.mastro_ventilation
                     primary: Mastro
-                    secondary: "⚡{{ ((state_attr('fan.mastro_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.mastro_temperature') }}°C · 💧{{ states('sensor.mastro_humidity') }}% · 💨{{ states('sensor.mastro_air_flow') }} m³/h"
+                    secondary: "⚡{{ ((state_attr('fan.mastro_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.mastro_temperature') }}°C · 💧{{ states('sensor.mastro_humidity') }}% · 💨{{ states('sensor.mastro_air_flow') }} RPM"
                     icon: mdi:fan
                     icon_color: "{{ 'green' if is_state('fan.mastro_ventilation', 'on') else 'grey' }}"
                     tap_action:
@@ -417,7 +417,7 @@ views:
                   visible: true
 
           - type: custom:plotly-graph
-            title: "Flusso aria (m³/h)"
+            title: Flusso aria (RPM)
             hours_to_show: 24
             refresh_interval: 60
             entities:
@@ -444,7 +444,7 @@ views:
             layout:
               height: 250
               yaxis:
-                title: "m³/h"
+                title: RPM
               xaxis:
                 rangeslider:
                   visible: true
