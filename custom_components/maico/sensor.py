@@ -60,7 +60,7 @@ SENSOR_DESCRIPTIONS: tuple[MaicoSensorEntityDescription, ...] = (
     MaicoSensorEntityDescription(
         key="air_flow",
         translation_key="air_flow",
-        native_unit_of_measurement="RPM",
+        native_unit_of_measurement="m³/h",
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         icon="mdi:fan",
