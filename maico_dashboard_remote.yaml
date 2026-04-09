@@ -2,342 +2,342 @@ views:
   - title: Overview
     path: overview
     icon: mdi:air-purifier
-    type: panel
-    cards:
-      - type: vertical-stack
+    type: sections
+    sections:
+      - type: grid
+        title: ""
         cards:
           - type: custom:mushroom-title-card
             title: Ventilazione Maico REC DUO
             subtitle: Controllo VMC
             icon: mdi:hvac
 
-          - type: horizontal-stack
+      - type: grid
+        title: ""
+        cards:
+          # ── Albero ──
+          - type: vertical-stack
             cards:
-              # ── Albero ──
-              - type: vertical-stack
-                cards:
-                  - type: custom:mushroom-template-card
+              - type: custom:mushroom-template-card
+                entity: fan.albero_ventilation
+                primary: Albero
+                secondary: "⚡{{ ((state_attr('fan.albero_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.albero_temperature') }}°C · 💧{{ states('sensor.albero_humidity') }}%"
+                icon: mdi:fan
+                icon_color: "{{ 'green' if is_state('fan.albero_ventilation', 'on') else 'grey' }}"
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
                     entity: fan.albero_ventilation
-                    primary: Albero
-                    secondary: "⚡{{ ((state_attr('fan.albero_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.albero_temperature') }}°C · 💧{{ states('sensor.albero_humidity') }}% · 💨{{ states('sensor.albero_air_flow') }} RPM"
-                    icon: mdi:fan
-                    icon_color: "{{ 'green' if is_state('fan.albero_ventilation', 'on') else 'grey' }}"
+                    icon: mdi:power
+                    icon_color: "{{ 'green' if is_state('fan.albero_ventilation', 'on') else 'red' }}"
+                    content: "{{ 'Acceso' if is_state('fan.albero_ventilation', 'on') else 'Spento' }}"
                     tap_action:
-                      action: more-info
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: fan.albero_ventilation
-                        icon: mdi:power
-                        icon_color: "{{ 'green' if is_state('fan.albero_ventilation', 'on') else 'red' }}"
-                        content: "{{ 'Acceso' if is_state('fan.albero_ventilation', 'on') else 'Spento' }}"
-                        tap_action:
-                          action: call-service
-                          service: fan.toggle
-                          target:
-                            entity_id: fan.albero_ventilation
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere Albero?"
-                      - type: template
-                        entity: switch.vmc_stanza_albero
-                        icon: mdi:power-plug
-                        icon_color: "{{ 'green' if is_state('switch.vmc_stanza_albero', 'on') else 'red' }}"
-                        content: "{{ 'Presa' if is_state('switch.vmc_stanza_albero', 'on') else 'Presa OFF' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.vmc_stanza_albero
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere la presa VMC di Albero?"
-                      - type: template
-                        entity: select.albero_operating_mode
-                        icon: mdi:hvac
-                        content: "{{ states('sensor.albero') }}"
-                      - type: template
-                        entity: switch.albero_boost_mode
-                        icon: mdi:fan-plus
-                        icon_color: "{{ 'green' if is_state('switch.albero_boost_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.albero_boost_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare il boost di Albero?"
-                      - type: template
-                        entity: switch.albero_sleep_mode
-                        icon: mdi:weather-night
-                        icon_color: "{{ 'green' if is_state('switch.albero_sleep_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.albero_sleep_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare la modalità notte di Albero?"
-                      - type: template
-                        entity: binary_sensor.albero_online
-                        icon: "{{ 'mdi:wifi' if is_state('binary_sensor.albero_online', 'on') else 'mdi:wifi-off' }}"
-                        icon_color: "{{ 'green' if is_state('binary_sensor.albero_online', 'on') else 'red' }}"
-                      - type: template
-                        entity: binary_sensor.albero_filter_warning
-                        icon: mdi:air-filter
-                        icon_color: "{{ 'red' if is_state('binary_sensor.albero_filter_warning', 'on') else 'green' }}"
-                        content: "{{ states('sensor.albero_filter_hours') }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.albero_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Albero?"
-
-              # ── Alcova ──
-              - type: vertical-stack
-                cards:
-                  - type: custom:mushroom-template-card
-                    entity: fan.alcova_ventilation
-                    primary: Alcova
-                    secondary: "⚡{{ ((state_attr('fan.alcova_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.alcova_temperature') }}°C · 💧{{ states('sensor.alcova_humidity') }}% · 💨{{ states('sensor.alcova_air_flow') }} RPM"
-                    icon: mdi:fan
-                    icon_color: "{{ 'green' if is_state('fan.alcova_ventilation', 'on') else 'grey' }}"
+                      action: call-service
+                      service: fan.toggle
+                      target:
+                        entity_id: fan.albero_ventilation
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere Albero?"
+                  - type: template
+                    entity: switch.vmc_stanza_albero
+                    icon: mdi:power-plug
+                    icon_color: "{{ 'green' if is_state('switch.vmc_stanza_albero', 'on') else 'red' }}"
+                    content: "{{ 'Presa' if is_state('switch.vmc_stanza_albero', 'on') else 'Presa OFF' }}"
                     tap_action:
-                      action: more-info
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: fan.alcova_ventilation
-                        icon: mdi:power
-                        icon_color: "{{ 'green' if is_state('fan.alcova_ventilation', 'on') else 'red' }}"
-                        content: "{{ 'Acceso' if is_state('fan.alcova_ventilation', 'on') else 'Spento' }}"
-                        tap_action:
-                          action: call-service
-                          service: fan.toggle
-                          target:
-                            entity_id: fan.alcova_ventilation
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere Alcova?"
-                      - type: template
-                        entity: switch.vmc_alcova
-                        icon: mdi:power-plug
-                        icon_color: "{{ 'green' if is_state('switch.vmc_alcova', 'on') else 'red' }}"
-                        content: "{{ 'Presa' if is_state('switch.vmc_alcova', 'on') else 'Presa OFF' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.vmc_alcova
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere la presa VMC di Alcova?"
-                      - type: template
-                        entity: select.alcova_operating_mode
-                        icon: mdi:hvac
-                        content: "{{ states('sensor.alcova') }}"
-                      - type: template
-                        entity: switch.alcova_boost_mode
-                        icon: mdi:fan-plus
-                        icon_color: "{{ 'green' if is_state('switch.alcova_boost_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.alcova_boost_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare il boost di Alcova?"
-                      - type: template
-                        entity: switch.alcova_sleep_mode
-                        icon: mdi:weather-night
-                        icon_color: "{{ 'green' if is_state('switch.alcova_sleep_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.alcova_sleep_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare la modalità notte di Alcova?"
-                      - type: template
-                        entity: binary_sensor.alcova_online
-                        icon: "{{ 'mdi:wifi' if is_state('binary_sensor.alcova_online', 'on') else 'mdi:wifi-off' }}"
-                        icon_color: "{{ 'green' if is_state('binary_sensor.alcova_online', 'on') else 'red' }}"
-                      - type: template
-                        entity: binary_sensor.alcova_filter_warning
-                        icon: mdi:air-filter
-                        icon_color: "{{ 'red' if is_state('binary_sensor.alcova_filter_warning', 'on') else 'green' }}"
-                        content: "{{ states('sensor.alcova_filter_hours') }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.alcova_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Alcova?"
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.vmc_stanza_albero
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere la presa VMC di Albero?"
+                  - type: template
+                    entity: select.albero_operating_mode
+                    icon: mdi:hvac
+                    content: "{{ states('sensor.albero') }}"
+                  - type: template
+                    entity: switch.albero_boost_mode
+                    icon: mdi:fan-plus
+                    icon_color: "{{ 'green' if is_state('switch.albero_boost_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.albero_boost_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare il boost di Albero?"
+                  - type: template
+                    entity: switch.albero_sleep_mode
+                    icon: mdi:weather-night
+                    icon_color: "{{ 'green' if is_state('switch.albero_sleep_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.albero_sleep_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare la modalità notte di Albero?"
+                  - type: template
+                    entity: binary_sensor.albero_online
+                    icon: "{{ 'mdi:wifi' if is_state('binary_sensor.albero_online', 'on') else 'mdi:wifi-off' }}"
+                    icon_color: "{{ 'green' if is_state('binary_sensor.albero_online', 'on') else 'red' }}"
+                  - type: template
+                    entity: binary_sensor.albero_filter_warning
+                    icon: mdi:air-filter
+                    icon_color: "{{ 'red' if is_state('binary_sensor.albero_filter_warning', 'on') else 'green' }}"
+                    content: "{{ states('sensor.albero_filter_hours') }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.albero_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Albero?"
 
-          - type: horizontal-stack
+          # ── Alcova ──
+          - type: vertical-stack
             cards:
-              # ── Grotta ──
-              - type: vertical-stack
-                cards:
-                  - type: custom:mushroom-template-card
-                    entity: fan.grotta_ventilation
-                    primary: Grotta
-                    secondary: "⚡{{ ((state_attr('fan.grotta_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.grotta_temperature') }}°C · 💧{{ states('sensor.grotta_humidity') }}% · 💨{{ states('sensor.grotta_air_flow') }} RPM"
-                    icon: mdi:fan
-                    icon_color: "{{ 'green' if is_state('fan.grotta_ventilation', 'on') else 'grey' }}"
+              - type: custom:mushroom-template-card
+                entity: fan.alcova_ventilation
+                primary: Alcova
+                secondary: "⚡{{ ((state_attr('fan.alcova_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.alcova_temperature') }}°C · 💧{{ states('sensor.alcova_humidity') }}%"
+                icon: mdi:fan
+                icon_color: "{{ 'green' if is_state('fan.alcova_ventilation', 'on') else 'grey' }}"
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: fan.alcova_ventilation
+                    icon: mdi:power
+                    icon_color: "{{ 'green' if is_state('fan.alcova_ventilation', 'on') else 'red' }}"
+                    content: "{{ 'Acceso' if is_state('fan.alcova_ventilation', 'on') else 'Spento' }}"
                     tap_action:
-                      action: more-info
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: fan.grotta_ventilation
-                        icon: mdi:power
-                        icon_color: "{{ 'green' if is_state('fan.grotta_ventilation', 'on') else 'red' }}"
-                        content: "{{ 'Acceso' if is_state('fan.grotta_ventilation', 'on') else 'Spento' }}"
-                        tap_action:
-                          action: call-service
-                          service: fan.toggle
-                          target:
-                            entity_id: fan.grotta_ventilation
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere Grotta?"
-                      - type: template
-                        entity: switch.vmc_grotta
-                        icon: mdi:power-plug
-                        icon_color: "{{ 'green' if is_state('switch.vmc_grotta', 'on') else 'red' }}"
-                        content: "{{ 'Presa' if is_state('switch.vmc_grotta', 'on') else 'Presa OFF' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.vmc_grotta
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere la presa VMC di Grotta?"
-                      - type: template
-                        entity: select.grotta_operating_mode
-                        icon: mdi:hvac
-                        content: "{{ states('sensor.grotta') }}"
-                      - type: template
-                        entity: switch.grotta_boost_mode
-                        icon: mdi:fan-plus
-                        icon_color: "{{ 'green' if is_state('switch.grotta_boost_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.grotta_boost_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare il boost di Grotta?"
-                      - type: template
-                        entity: switch.grotta_sleep_mode
-                        icon: mdi:weather-night
-                        icon_color: "{{ 'green' if is_state('switch.grotta_sleep_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.grotta_sleep_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare la modalità notte di Grotta?"
-                      - type: template
-                        entity: binary_sensor.grotta_online
-                        icon: "{{ 'mdi:wifi' if is_state('binary_sensor.grotta_online', 'on') else 'mdi:wifi-off' }}"
-                        icon_color: "{{ 'green' if is_state('binary_sensor.grotta_online', 'on') else 'red' }}"
-                      - type: template
-                        entity: binary_sensor.grotta_filter_warning
-                        icon: mdi:air-filter
-                        icon_color: "{{ 'red' if is_state('binary_sensor.grotta_filter_warning', 'on') else 'green' }}"
-                        content: "{{ states('sensor.grotta_filter_hours') }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.grotta_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Grotta?"
+                      action: call-service
+                      service: fan.toggle
+                      target:
+                        entity_id: fan.alcova_ventilation
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere Alcova?"
+                  - type: template
+                    entity: switch.vmc_alcova
+                    icon: mdi:power-plug
+                    icon_color: "{{ 'green' if is_state('switch.vmc_alcova', 'on') else 'red' }}"
+                    content: "{{ 'Presa' if is_state('switch.vmc_alcova', 'on') else 'Presa OFF' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.vmc_alcova
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere la presa VMC di Alcova?"
+                  - type: template
+                    entity: select.alcova_operating_mode
+                    icon: mdi:hvac
+                    content: "{{ states('sensor.alcova') }}"
+                  - type: template
+                    entity: switch.alcova_boost_mode
+                    icon: mdi:fan-plus
+                    icon_color: "{{ 'green' if is_state('switch.alcova_boost_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.alcova_boost_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare il boost di Alcova?"
+                  - type: template
+                    entity: switch.alcova_sleep_mode
+                    icon: mdi:weather-night
+                    icon_color: "{{ 'green' if is_state('switch.alcova_sleep_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.alcova_sleep_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare la modalità notte di Alcova?"
+                  - type: template
+                    entity: binary_sensor.alcova_online
+                    icon: "{{ 'mdi:wifi' if is_state('binary_sensor.alcova_online', 'on') else 'mdi:wifi-off' }}"
+                    icon_color: "{{ 'green' if is_state('binary_sensor.alcova_online', 'on') else 'red' }}"
+                  - type: template
+                    entity: binary_sensor.alcova_filter_warning
+                    icon: mdi:air-filter
+                    icon_color: "{{ 'red' if is_state('binary_sensor.alcova_filter_warning', 'on') else 'green' }}"
+                    content: "{{ states('sensor.alcova_filter_hours') }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.alcova_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Alcova?"
 
-              # ── Mastro ──
-              - type: vertical-stack
-                cards:
-                  - type: custom:mushroom-template-card
-                    entity: fan.mastro_ventilation
-                    primary: Mastro
-                    secondary: "⚡{{ ((state_attr('fan.mastro_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.mastro_temperature') }}°C · 💧{{ states('sensor.mastro_humidity') }}% · 💨{{ states('sensor.mastro_air_flow') }} RPM"
-                    icon: mdi:fan
-                    icon_color: "{{ 'green' if is_state('fan.mastro_ventilation', 'on') else 'grey' }}"
+          # ── Grotta ──
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-template-card
+                entity: fan.grotta_ventilation
+                primary: Grotta
+                secondary: "⚡{{ ((state_attr('fan.grotta_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.grotta_temperature') }}°C · 💧{{ states('sensor.grotta_humidity') }}%"
+                icon: mdi:fan
+                icon_color: "{{ 'green' if is_state('fan.grotta_ventilation', 'on') else 'grey' }}"
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: fan.grotta_ventilation
+                    icon: mdi:power
+                    icon_color: "{{ 'green' if is_state('fan.grotta_ventilation', 'on') else 'red' }}"
+                    content: "{{ 'Acceso' if is_state('fan.grotta_ventilation', 'on') else 'Spento' }}"
                     tap_action:
-                      action: more-info
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: fan.mastro_ventilation
-                        icon: mdi:power
-                        icon_color: "{{ 'green' if is_state('fan.mastro_ventilation', 'on') else 'red' }}"
-                        content: "{{ 'Acceso' if is_state('fan.mastro_ventilation', 'on') else 'Spento' }}"
-                        tap_action:
-                          action: call-service
-                          service: fan.toggle
-                          target:
-                            entity_id: fan.mastro_ventilation
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere Mastro?"
-                      - type: template
-                        entity: switch.interruttore_vmc_mastro
-                        icon: mdi:power-plug
-                        icon_color: "{{ 'green' if is_state('switch.interruttore_vmc_mastro', 'on') else 'red' }}"
-                        content: "{{ 'Presa' if is_state('switch.interruttore_vmc_mastro', 'on') else 'Presa OFF' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.interruttore_vmc_mastro
-                          confirmation:
-                            text: "Sei sicuro di voler accendere/spegnere la presa VMC di Mastro?"
-                      - type: template
-                        entity: select.mastro_operating_mode
-                        icon: mdi:hvac
-                        content: "{{ states('sensor.mastro') }}"
-                      - type: template
-                        entity: switch.mastro_boost_mode
-                        icon: mdi:fan-plus
-                        icon_color: "{{ 'green' if is_state('switch.mastro_boost_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.mastro_boost_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare il boost di Mastro?"
-                      - type: template
-                        entity: switch.mastro_sleep_mode
-                        icon: mdi:weather-night
-                        icon_color: "{{ 'green' if is_state('switch.mastro_sleep_mode', 'on') else '' }}"
-                        tap_action:
-                          action: call-service
-                          service: switch.toggle
-                          target:
-                            entity_id: switch.mastro_sleep_mode
-                          confirmation:
-                            text: "Sei sicuro di voler attivare/disattivare la modalità notte di Mastro?"
-                      - type: template
-                        entity: binary_sensor.mastro_online
-                        icon: "{{ 'mdi:wifi' if is_state('binary_sensor.mastro_online', 'on') else 'mdi:wifi-off' }}"
-                        icon_color: "{{ 'green' if is_state('binary_sensor.mastro_online', 'on') else 'red' }}"
-                      - type: template
-                        entity: binary_sensor.mastro_filter_warning
-                        icon: mdi:air-filter
-                        icon_color: "{{ 'red' if is_state('binary_sensor.mastro_filter_warning', 'on') else 'green' }}"
-                        content: "{{ states('sensor.mastro_filter_hours') }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.mastro_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Mastro?"
+                      action: call-service
+                      service: fan.toggle
+                      target:
+                        entity_id: fan.grotta_ventilation
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere Grotta?"
+                  - type: template
+                    entity: switch.vmc_grotta
+                    icon: mdi:power-plug
+                    icon_color: "{{ 'green' if is_state('switch.vmc_grotta', 'on') else 'red' }}"
+                    content: "{{ 'Presa' if is_state('switch.vmc_grotta', 'on') else 'Presa OFF' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.vmc_grotta
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere la presa VMC di Grotta?"
+                  - type: template
+                    entity: select.grotta_operating_mode
+                    icon: mdi:hvac
+                    content: "{{ states('sensor.grotta') }}"
+                  - type: template
+                    entity: switch.grotta_boost_mode
+                    icon: mdi:fan-plus
+                    icon_color: "{{ 'green' if is_state('switch.grotta_boost_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.grotta_boost_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare il boost di Grotta?"
+                  - type: template
+                    entity: switch.grotta_sleep_mode
+                    icon: mdi:weather-night
+                    icon_color: "{{ 'green' if is_state('switch.grotta_sleep_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.grotta_sleep_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare la modalità notte di Grotta?"
+                  - type: template
+                    entity: binary_sensor.grotta_online
+                    icon: "{{ 'mdi:wifi' if is_state('binary_sensor.grotta_online', 'on') else 'mdi:wifi-off' }}"
+                    icon_color: "{{ 'green' if is_state('binary_sensor.grotta_online', 'on') else 'red' }}"
+                  - type: template
+                    entity: binary_sensor.grotta_filter_warning
+                    icon: mdi:air-filter
+                    icon_color: "{{ 'red' if is_state('binary_sensor.grotta_filter_warning', 'on') else 'green' }}"
+                    content: "{{ states('sensor.grotta_filter_hours') }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.grotta_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Grotta?"
+
+          # ── Mastro ──
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-template-card
+                entity: fan.mastro_ventilation
+                primary: Mastro
+                secondary: "⚡{{ ((state_attr('fan.mastro_ventilation','percentage') | int(0)) * 15 / 100) | round(0) | int + 1 }}/16 · 🌡{{ states('sensor.mastro_temperature') }}°C · 💧{{ states('sensor.mastro_humidity') }}%"
+                icon: mdi:fan
+                icon_color: "{{ 'green' if is_state('fan.mastro_ventilation', 'on') else 'grey' }}"
+                tap_action:
+                  action: more-info
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: fan.mastro_ventilation
+                    icon: mdi:power
+                    icon_color: "{{ 'green' if is_state('fan.mastro_ventilation', 'on') else 'red' }}"
+                    content: "{{ 'Acceso' if is_state('fan.mastro_ventilation', 'on') else 'Spento' }}"
+                    tap_action:
+                      action: call-service
+                      service: fan.toggle
+                      target:
+                        entity_id: fan.mastro_ventilation
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere Mastro?"
+                  - type: template
+                    entity: switch.interruttore_vmc_mastro
+                    icon: mdi:power-plug
+                    icon_color: "{{ 'green' if is_state('switch.interruttore_vmc_mastro', 'on') else 'red' }}"
+                    content: "{{ 'Presa' if is_state('switch.interruttore_vmc_mastro', 'on') else 'Presa OFF' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.interruttore_vmc_mastro
+                      confirmation:
+                        text: "Sei sicuro di voler accendere/spegnere la presa VMC di Mastro?"
+                  - type: template
+                    entity: select.mastro_operating_mode
+                    icon: mdi:hvac
+                    content: "{{ states('sensor.mastro') }}"
+                  - type: template
+                    entity: switch.mastro_boost_mode
+                    icon: mdi:fan-plus
+                    icon_color: "{{ 'green' if is_state('switch.mastro_boost_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.mastro_boost_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare il boost di Mastro?"
+                  - type: template
+                    entity: switch.mastro_sleep_mode
+                    icon: mdi:weather-night
+                    icon_color: "{{ 'green' if is_state('switch.mastro_sleep_mode', 'on') else '' }}"
+                    tap_action:
+                      action: call-service
+                      service: switch.toggle
+                      target:
+                        entity_id: switch.mastro_sleep_mode
+                      confirmation:
+                        text: "Sei sicuro di voler attivare/disattivare la modalità notte di Mastro?"
+                  - type: template
+                    entity: binary_sensor.mastro_online
+                    icon: "{{ 'mdi:wifi' if is_state('binary_sensor.mastro_online', 'on') else 'mdi:wifi-off' }}"
+                    icon_color: "{{ 'green' if is_state('binary_sensor.mastro_online', 'on') else 'red' }}"
+                  - type: template
+                    entity: binary_sensor.mastro_filter_warning
+                    icon: mdi:air-filter
+                    icon_color: "{{ 'red' if is_state('binary_sensor.mastro_filter_warning', 'on') else 'green' }}"
+                    content: "{{ states('sensor.mastro_filter_hours') }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.mastro_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Mastro?"
 
   - title: Sensori
     path: sensors
@@ -452,251 +452,255 @@ views:
   - title: Impostazioni
     path: settings
     icon: mdi:cog
-    type: panel
-    cards:
-      - type: vertical-stack
+    type: sections
+    sections:
+      - type: grid
+        title: ""
         cards:
           - type: custom:mushroom-title-card
             title: Impostazioni Dispositivi
             subtitle: Configurazione e manutenzione
             icon: mdi:cog
 
-          - type: horizontal-stack
+      - type: grid
+        title: ""
+        cards:
+          # ── Albero ──
+          - type: vertical-stack
             cards:
-              - type: vertical-stack
+              - type: custom:mushroom-title-card
+                title: Albero
+              - type: grid
+                columns: 2
+                square: false
                 cards:
-                  - type: custom:mushroom-title-card
-                    title: Albero
-                  - type: grid
-                    columns: 3
-                    square: false
-                    cards:
-                      - type: tile
-                        entity: number.albero_led_brightness
-                        name: LED
-                        icon: mdi:led-on
-                      - type: tile
-                        entity: number.albero_humidity_threshold
-                        name: Soglia umidità
-                        icon: mdi:water-percent-alert
-                      - type: tile
-                        entity: switch.albero_air_quality_threshold
-                        name: Soglia AQ
-                        icon: mdi:air-purifier
-                      - type: tile
-                        entity: number.albero_night_mode_speed
-                        name: Velocita notte
-                        icon: mdi:fan-chevron-down
-                      - type: tile
-                        entity: number.albero_boost_duration
-                        name: Durata boost
-                        icon: mdi:timer
-                      - type: tile
-                        entity: number.albero_sleep_duration
-                        name: Durata notte
-                        icon: mdi:timer-outline
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: binary_sensor.albero_filter_warning
-                        icon: mdi:air-filter
-                        content: Pulisci Filtro
-                        icon_color: "{{ 'red' if is_state('binary_sensor.albero_filter_warning', 'on') else 'green' }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.albero_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Albero?"
-                      - type: template
-                        icon: mdi:restart
-                        content: Riavvia il dispositivo
-                        icon_color: orange
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.albero_reboot_the_device
-                          confirmation:
-                            text: "Sei sicuro di voler riavviare il dispositivo Albero?"
+                  - type: tile
+                    entity: number.albero_led_brightness
+                    name: LED
+                    icon: mdi:led-on
+                  - type: tile
+                    entity: number.albero_humidity_threshold
+                    name: Soglia umidità
+                    icon: mdi:water-percent-alert
+                  - type: tile
+                    entity: switch.albero_air_quality_threshold
+                    name: Soglia AQ
+                    icon: mdi:air-purifier
+                  - type: tile
+                    entity: number.albero_night_mode_speed
+                    name: Velocita notte
+                    icon: mdi:fan-chevron-down
+                  - type: tile
+                    entity: number.albero_boost_duration
+                    name: Durata boost
+                    icon: mdi:timer
+                  - type: tile
+                    entity: number.albero_sleep_duration
+                    name: Durata notte
+                    icon: mdi:timer-outline
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: binary_sensor.albero_filter_warning
+                    icon: mdi:air-filter
+                    content: Pulisci Filtro
+                    icon_color: "{{ 'red' if is_state('binary_sensor.albero_filter_warning', 'on') else 'green' }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.albero_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Albero?"
+                  - type: template
+                    icon: mdi:restart
+                    content: Riavvia il dispositivo
+                    icon_color: orange
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.albero_reboot_the_device
+                      confirmation:
+                        text: "Sei sicuro di voler riavviare il dispositivo Albero?"
 
-              - type: vertical-stack
-                cards:
-                  - type: custom:mushroom-title-card
-                    title: Alcova
-                  - type: grid
-                    columns: 3
-                    square: false
-                    cards:
-                      - type: tile
-                        entity: number.alcova_led_brightness
-                        name: LED
-                        icon: mdi:led-on
-                      - type: tile
-                        entity: number.alcova_humidity_threshold
-                        name: Soglia umidità
-                        icon: mdi:water-percent-alert
-                      - type: tile
-                        entity: switch.alcova_air_quality_threshold
-                        name: Soglia AQ
-                        icon: mdi:air-purifier
-                      - type: tile
-                        entity: number.alcova_night_mode_speed
-                        name: Velocita notte
-                        icon: mdi:fan-chevron-down
-                      - type: tile
-                        entity: number.alcova_boost_duration
-                        name: Durata boost
-                        icon: mdi:timer
-                      - type: tile
-                        entity: number.alcova_sleep_duration
-                        name: Durata notte
-                        icon: mdi:timer-outline
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: binary_sensor.alcova_filter_warning
-                        icon: mdi:air-filter
-                        content: Pulisci Filtro
-                        icon_color: "{{ 'red' if is_state('binary_sensor.alcova_filter_warning', 'on') else 'green' }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.alcova_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Alcova?"
-                      - type: template
-                        icon: mdi:restart
-                        content: Riavvia il dispositivo
-                        icon_color: orange
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.alcova_reboot_the_device
-                          confirmation:
-                            text: "Sei sicuro di voler riavviare il dispositivo Alcova?"
-
-          - type: horizontal-stack
+          # ── Alcova ──
+          - type: vertical-stack
             cards:
-              - type: vertical-stack
+              - type: custom:mushroom-title-card
+                title: Alcova
+              - type: grid
+                columns: 2
+                square: false
                 cards:
-                  - type: custom:mushroom-title-card
-                    title: Grotta
-                  - type: grid
-                    columns: 3
-                    square: false
-                    cards:
-                      - type: tile
-                        entity: number.grotta_led_brightness
-                        name: LED
-                        icon: mdi:led-on
-                      - type: tile
-                        entity: number.grotta_humidity_threshold
-                        name: Soglia umidità
-                        icon: mdi:water-percent-alert
-                      - type: tile
-                        entity: switch.grotta_air_quality_threshold
-                        name: Soglia AQ
-                        icon: mdi:air-purifier
-                      - type: tile
-                        entity: number.grotta_night_mode_speed
-                        name: Velocita notte
-                        icon: mdi:fan-chevron-down
-                      - type: tile
-                        entity: number.grotta_boost_duration
-                        name: Durata boost
-                        icon: mdi:timer
-                      - type: tile
-                        entity: number.grotta_sleep_duration
-                        name: Durata notte
-                        icon: mdi:timer-outline
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: binary_sensor.grotta_filter_warning
-                        icon: mdi:air-filter
-                        content: Pulisci Filtro
-                        icon_color: "{{ 'red' if is_state('binary_sensor.grotta_filter_warning', 'on') else 'green' }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.grotta_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Grotta?"
-                      - type: template
-                        icon: mdi:restart
-                        content: Riavvia il dispositivo
-                        icon_color: orange
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.grotta_reboot_the_device
-                          confirmation:
-                            text: "Sei sicuro di voler riavviare il dispositivo Grotta?"
+                  - type: tile
+                    entity: number.alcova_led_brightness
+                    name: LED
+                    icon: mdi:led-on
+                  - type: tile
+                    entity: number.alcova_humidity_threshold
+                    name: Soglia umidità
+                    icon: mdi:water-percent-alert
+                  - type: tile
+                    entity: switch.alcova_air_quality_threshold
+                    name: Soglia AQ
+                    icon: mdi:air-purifier
+                  - type: tile
+                    entity: number.alcova_night_mode_speed
+                    name: Velocita notte
+                    icon: mdi:fan-chevron-down
+                  - type: tile
+                    entity: number.alcova_boost_duration
+                    name: Durata boost
+                    icon: mdi:timer
+                  - type: tile
+                    entity: number.alcova_sleep_duration
+                    name: Durata notte
+                    icon: mdi:timer-outline
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: binary_sensor.alcova_filter_warning
+                    icon: mdi:air-filter
+                    content: Pulisci Filtro
+                    icon_color: "{{ 'red' if is_state('binary_sensor.alcova_filter_warning', 'on') else 'green' }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.alcova_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Alcova?"
+                  - type: template
+                    icon: mdi:restart
+                    content: Riavvia il dispositivo
+                    icon_color: orange
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.alcova_reboot_the_device
+                      confirmation:
+                        text: "Sei sicuro di voler riavviare il dispositivo Alcova?"
 
-              - type: vertical-stack
+          # ── Grotta ──
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Grotta
+              - type: grid
+                columns: 2
+                square: false
                 cards:
-                  - type: custom:mushroom-title-card
-                    title: Mastro
-                  - type: grid
-                    columns: 3
-                    square: false
-                    cards:
-                      - type: tile
-                        entity: number.mastro_led_brightness
-                        name: LED
-                        icon: mdi:led-on
-                      - type: tile
-                        entity: number.mastro_humidity_threshold
-                        name: Soglia umidità
-                        icon: mdi:water-percent-alert
-                      - type: tile
-                        entity: switch.mastro_air_quality_threshold
-                        name: Soglia AQ
-                        icon: mdi:air-purifier
-                      - type: tile
-                        entity: number.mastro_night_mode_speed
-                        name: Velocita notte
-                        icon: mdi:fan-chevron-down
-                      - type: tile
-                        entity: number.mastro_boost_duration
-                        name: Durata boost
-                        icon: mdi:timer
-                      - type: tile
-                        entity: number.mastro_sleep_duration
-                        name: Durata notte
-                        icon: mdi:timer-outline
-                  - type: custom:mushroom-chips-card
-                    alignment: center
-                    chips:
-                      - type: template
-                        entity: binary_sensor.mastro_filter_warning
-                        icon: mdi:air-filter
-                        content: Pulisci Filtro
-                        icon_color: "{{ 'red' if is_state('binary_sensor.mastro_filter_warning', 'on') else 'green' }}"
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.mastro_clear_filter
-                          confirmation:
-                            text: "Sei sicuro di voler resettare il contatore del filtro di Mastro?"
-                      - type: template
-                        icon: mdi:restart
-                        content: Riavvia il dispositivo
-                        icon_color: orange
-                        tap_action:
-                          action: call-service
-                          service: button.press
-                          target:
-                            entity_id: button.mastro_reboot_the_device
-                          confirmation:
-                            text: "Sei sicuro di voler riavviare il dispositivo Mastro?"
+                  - type: tile
+                    entity: number.grotta_led_brightness
+                    name: LED
+                    icon: mdi:led-on
+                  - type: tile
+                    entity: number.grotta_humidity_threshold
+                    name: Soglia umidità
+                    icon: mdi:water-percent-alert
+                  - type: tile
+                    entity: switch.grotta_air_quality_threshold
+                    name: Soglia AQ
+                    icon: mdi:air-purifier
+                  - type: tile
+                    entity: number.grotta_night_mode_speed
+                    name: Velocita notte
+                    icon: mdi:fan-chevron-down
+                  - type: tile
+                    entity: number.grotta_boost_duration
+                    name: Durata boost
+                    icon: mdi:timer
+                  - type: tile
+                    entity: number.grotta_sleep_duration
+                    name: Durata notte
+                    icon: mdi:timer-outline
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: binary_sensor.grotta_filter_warning
+                    icon: mdi:air-filter
+                    content: Pulisci Filtro
+                    icon_color: "{{ 'red' if is_state('binary_sensor.grotta_filter_warning', 'on') else 'green' }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.grotta_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Grotta?"
+                  - type: template
+                    icon: mdi:restart
+                    content: Riavvia il dispositivo
+                    icon_color: orange
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.grotta_reboot_the_device
+                      confirmation:
+                        text: "Sei sicuro di voler riavviare il dispositivo Grotta?"
+
+          # ── Mastro ──
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Mastro
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: tile
+                    entity: number.mastro_led_brightness
+                    name: LED
+                    icon: mdi:led-on
+                  - type: tile
+                    entity: number.mastro_humidity_threshold
+                    name: Soglia umidità
+                    icon: mdi:water-percent-alert
+                  - type: tile
+                    entity: switch.mastro_air_quality_threshold
+                    name: Soglia AQ
+                    icon: mdi:air-purifier
+                  - type: tile
+                    entity: number.mastro_night_mode_speed
+                    name: Velocita notte
+                    icon: mdi:fan-chevron-down
+                  - type: tile
+                    entity: number.mastro_boost_duration
+                    name: Durata boost
+                    icon: mdi:timer
+                  - type: tile
+                    entity: number.mastro_sleep_duration
+                    name: Durata notte
+                    icon: mdi:timer-outline
+              - type: custom:mushroom-chips-card
+                alignment: center
+                chips:
+                  - type: template
+                    entity: binary_sensor.mastro_filter_warning
+                    icon: mdi:air-filter
+                    content: Pulisci Filtro
+                    icon_color: "{{ 'red' if is_state('binary_sensor.mastro_filter_warning', 'on') else 'green' }}"
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.mastro_clear_filter
+                      confirmation:
+                        text: "Sei sicuro di voler resettare il contatore del filtro di Mastro?"
+                  - type: template
+                    icon: mdi:restart
+                    content: Riavvia il dispositivo
+                    icon_color: orange
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.mastro_reboot_the_device
+                      confirmation:
+                        text: "Sei sicuro di voler riavviare il dispositivo Mastro?"
