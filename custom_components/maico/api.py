@@ -319,13 +319,21 @@ class MaicoApiClient:
             if "epoch" in value:
                 device.last_update = datetime.fromtimestamp(value["epoch"])
             if "temp" in value:
-                device.air_temperature = value["temp"] / 10
+                temp = value["temp"] / 10
+                if -40 <= temp <= 80:  # filter startup sentinel (888.8)
+                    device.air_temperature = temp
             if "hy" in value:
-                device.humidity = value["hy"] / 10
+                hum = value["hy"] / 10
+                if 0 <= hum <= 100:  # filter startup sentinel (888.8)
+                    device.humidity = hum
             if "aqs" in value:
-                device.air_quality = value["aqs"] / 10
+                aqs = value["aqs"] / 10
+                if 0 <= aqs <= 500:  # filter startup sentinel
+                    device.air_quality = aqs
             if "rpm" in value:
-                device.air_flow = value["rpm"] / 10
+                rpm = value["rpm"] / 10
+                if 0 <= rpm <= 5000:  # filter startup sentinel
+                    device.air_flow = rpm
             if "mode" in value:
                 device.mode = max(0, min(16, value["mode"]))
             if "cnt_flt" in value:
