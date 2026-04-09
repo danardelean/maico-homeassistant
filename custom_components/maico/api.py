@@ -413,9 +413,10 @@ class MaicoApiClient:
 
                 # Read messages, but reconnect before token expires
                 async for msg in self._ws:
-                    # Proactively close WS if token is about to expire (5 min buffer)
-                    if time.time() > self._token_expiry - 300:
-                        _LOGGER.debug("Token expiring soon, reconnecting WebSocket")
+                    # Proactively close WS if token is about to expire (2 min buffer)
+                    if time.time() > self._token_expiry - 120:
+                        _LOGGER.debug("Token expiring soon, forcing refresh and reconnecting WebSocket")
+                        self._token_expiry = 0  # force refresh on reconnect
                         await self._ws.close()
                         break
                     if msg.type == aiohttp.WSMsgType.TEXT:
