@@ -53,6 +53,7 @@ class MaicoApiClient:
         self._ws: aiohttp.ClientWebSocketResponse | None = None
         self._ws_task: asyncio.Task | None = None
         self._ws_running = False
+        self._on_token_refresh: callable | None = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -195,6 +196,10 @@ class MaicoApiClient:
             self._access_token = data["access_token"]
             self._id_token = data.get("id_token", self._id_token)
             self._token_expiry = time.time() + data.get("expires_in", 3600) - 60
+            _LOGGER.debug("Token refreshed, expires in %s seconds", data.get("expires_in", 3600))
+            # Notify listener to persist tokens
+            if self._on_token_refresh:
+                self._on_token_refresh()
         except Exception as err:
             raise MaicoAuthError(f"Token refresh failed: {err}") from err
 
@@ -406,8 +411,13 @@ class MaicoApiClient:
                 if on_connected:
                     on_connected()
 
-                # Read messages
+                # Read messages, but reconnect before token expires
                 async for msg in self._ws:
+                    # Proactively close WS if token is about to expire (5 min buffer)
+                    if time.time() > self._token_expiry - 300:
+                        _LOGGER.debug("Token expiring soon, reconnecting WebSocket")
+                        await self._ws.close()
+                        break
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         try:
                             data = json.loads(msg.data)

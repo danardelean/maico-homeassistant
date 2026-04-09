@@ -43,16 +43,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data.get(CONF_REFRESH_TOKEN),
     )
 
-    coordinator = MaicoDataUpdateCoordinator(hass, api)
-    await coordinator.async_config_entry_first_refresh()
-
-    # Store updated tokens back to config entry
-    tokens = api.get_tokens()
-    if tokens.get("refresh_token") != entry.data.get(CONF_REFRESH_TOKEN):
+    # Persist tokens to config entry after every refresh
+    def _persist_tokens() -> None:
+        tokens = api.get_tokens()
         hass.config_entries.async_update_entry(
             entry,
             data={**entry.data, **tokens},
         )
+        _LOGGER.debug("Persisted refreshed tokens to config entry")
+
+    api._on_token_refresh = _persist_tokens
+
+    coordinator = MaicoDataUpdateCoordinator(hass, api)
+    await coordinator.async_config_entry_first_refresh()
+
+    # Persist tokens after initial setup
+    _persist_tokens()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
