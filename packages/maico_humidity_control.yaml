@@ -1,0 +1,1014 @@
+# ══════════════════════════════════════════════════════════════════
+# Maico Humidity & Mold Control — self-contained package
+# Drop this file in /config/packages/ and restart HA.
+# Requires: homeassistant.packages: !include_dir_named packages/
+# ══════════════════════════════════════════════════════════════════
+
+# ─── Helpers ─────────────────────────────────────────────────────
+input_datetime:
+  last_visit_end:
+    name: "Fine ultima visita"
+    has_date: true
+    has_time: true
+    icon: mdi:calendar-clock
+
+input_boolean:
+  post_visit_drying:
+    name: "Modalità asciugatura post-visita"
+    icon: mdi:waves-arrow-up
+
+# ─── Statistics sensors (24 h rolling mean for humidity trend) ────
+sensor:
+  - platform: statistics
+    name: "Albero Humidity Mean 24h"
+    unique_id: albero_humidity_mean_24h
+    entity_id: sensor.albero_humidity
+    state_characteristic: mean
+    max_age:
+      hours: 24
+    sampling_size: 500
+
+  - platform: statistics
+    name: "Alcova Humidity Mean 24h"
+    unique_id: alcova_humidity_mean_24h
+    entity_id: sensor.alcova_humidity
+    state_characteristic: mean
+    max_age:
+      hours: 24
+    sampling_size: 500
+
+  - platform: statistics
+    name: "Grotta Humidity Mean 24h"
+    unique_id: grotta_humidity_mean_24h
+    entity_id: sensor.grotta_humidity
+    state_characteristic: mean
+    max_age:
+      hours: 24
+    sampling_size: 500
+
+  - platform: statistics
+    name: "Mastro Humidity Mean 24h"
+    unique_id: mastro_humidity_mean_24h
+    entity_id: sensor.mastro_humidity
+    state_characteristic: mean
+    max_age:
+      hours: 24
+    sampling_size: 500
+
+# ─── Template sensors ────────────────────────────────────────────
+template:
+  - sensor:
+      # ── Outdoor dew point (Magnus formula) ───────────────────
+      - name: "Outdoor Dew Point"
+        unique_id: outdoor_dew_point
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {% set t = states('sensor.temperatura_esterna_temperature') | float(0) %}
+          {% set rh = states('sensor.temperatura_esterna_humidity') | float(0) %}
+          {% if rh <= 0 or rh > 100 %}
+            unknown
+          {% else %}
+            {% set a = 17.27 %}
+            {% set b = 237.7 %}
+            {% set alpha = ((a * t) / (b + t)) + (rh / 100) | log %}
+            {{ ((b * alpha) / (a - alpha)) | round(1) }}
+          {% endif %}
+        availability: >
+          {{ states('sensor.temperatura_esterna_temperature') not in ['unknown','unavailable','none']
+             and states('sensor.temperatura_esterna_humidity') not in ['unknown','unavailable','none'] }}
+
+      # ── Coldest indoor room ─────────────────────────────────
+      - name: "Coldest Room Temperature"
+        unique_id: coldest_room_temp
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {{ [
+            states('sensor.albero_temperature') | float(99),
+            states('sensor.alcova_temperature') | float(99),
+            states('sensor.grotta_temperature') | float(99),
+            states('sensor.mastro_temperature') | float(99)
+          ] | min | round(1) }}
+
+      # ── Per-room "ventilation safe" flags ───────────────────
+      # Alcova — elevated, standard proxy (air - 2°C)
+      - name: "Alcova Ventilation Safe"
+        unique_id: alcova_vent_safe
+        icon: mdi:shield-check-outline
+        state: >
+          {% set room_t = states('sensor.alcova_temperature') | float(99) %}
+          {% set wall_proxy = room_t - 2 %}
+          {% set odp = states('sensor.outdoor_dew_point') | float(99) %}
+          {{ 'safe' if odp < (wall_proxy - 1) else 'unsafe' }}
+
+      # Mastro — ground level, standard proxy
+      - name: "Mastro Ventilation Safe"
+        unique_id: mastro_vent_safe
+        icon: mdi:shield-check-outline
+        state: >
+          {% set room_t = states('sensor.mastro_temperature') | float(99) %}
+          {% set wall_proxy = room_t - 2 %}
+          {% set odp = states('sensor.outdoor_dew_point') | float(99) %}
+          {{ 'safe' if odp < (wall_proxy - 1) else 'unsafe' }}
+
+      # Albero — one half-buried wall, cap at 12°C
+      - name: "Albero Ventilation Safe"
+        unique_id: albero_vent_safe
+        icon: mdi:shield-check-outline
+        state: >
+          {% set room_t = states('sensor.albero_temperature') | float(99) %}
+          {% set wall_proxy = [room_t - 2, 12] | min %}
+          {% set odp = states('sensor.outdoor_dew_point') | float(99) %}
+          {{ 'safe' if odp < (wall_proxy - 1) else 'unsafe' }}
+
+      # Grotta — half basement, cap at 11°C
+      - name: "Grotta Ventilation Safe"
+        unique_id: grotta_vent_safe
+        icon: mdi:shield-check-outline
+        state: >
+          {% set room_t = states('sensor.grotta_temperature') | float(99) %}
+          {% set wall_proxy = [room_t - 2, 11] | min %}
+          {% set odp = states('sensor.outdoor_dew_point') | float(99) %}
+          {{ 'safe' if odp < (wall_proxy - 1) else 'unsafe' }}
+
+      # ── Mold risk enum per room ─────────────────────────────
+      - name: "Albero Mold Risk"
+        unique_id: albero_mold_risk
+        icon: mdi:mushroom-outline
+        state: >
+          {% set h = states('sensor.albero_humidity') | float(0) %}
+          {% if h < 55 %}ok
+          {% elif h < 60 %}watch
+          {% elif h < 65 %}action
+          {% elif h < 70 %}alert
+          {% else %}critical
+          {% endif %}
+
+      - name: "Alcova Mold Risk"
+        unique_id: alcova_mold_risk
+        icon: mdi:mushroom-outline
+        state: >
+          {% set h = states('sensor.alcova_humidity') | float(0) %}
+          {% if h < 55 %}ok
+          {% elif h < 60 %}watch
+          {% elif h < 65 %}action
+          {% elif h < 70 %}alert
+          {% else %}critical
+          {% endif %}
+
+      - name: "Grotta Mold Risk"
+        unique_id: grotta_mold_risk
+        icon: mdi:mushroom-outline
+        # Grotta uses stricter bands (−3%) because of cold basement walls
+        state: >
+          {% set h = states('sensor.grotta_humidity') | float(0) %}
+          {% if h < 52 %}ok
+          {% elif h < 57 %}watch
+          {% elif h < 62 %}action
+          {% elif h < 67 %}alert
+          {% else %}critical
+          {% endif %}
+
+      - name: "Mastro Mold Risk"
+        unique_id: mastro_mold_risk
+        icon: mdi:mushroom-outline
+        state: >
+          {% set h = states('sensor.mastro_humidity') | float(0) %}
+          {% if h < 55 %}ok
+          {% elif h < 60 %}watch
+          {% elif h < 65 %}action
+          {% elif h < 70 %}alert
+          {% else %}critical
+          {% endif %}
+
+      # ── Per-room computed target speed (for dashboard + debug) ──
+      # Combines humidity tier + CO2 tier + vent_safe + post-visit mode
+      - name: "Albero Target Speed"
+        unique_id: albero_target_speed
+        unit_of_measurement: "level"
+        state: >
+          {% set h = states('sensor.albero_humidity') | float(0) %}
+          {% set co2 = states('sensor.albero_air_quality_monitor_carbon_dioxide') | float(0) %}
+          {% set safe = is_state('sensor.albero_vent_safe', 'safe') %}
+          {% set drying = is_state('input_boolean.post_visit_drying', 'on') %}
+          {# Humidity tier — Albero has 1% stricter bands #}
+          {% if h < 54 %}{% set h_t = 3 %}
+          {% elif h < 59 %}{% set h_t = 5 %}
+          {% elif h < 64 %}{% set h_t = 8 %}
+          {% elif h < 69 %}{% set h_t = 12 %}
+          {% else %}{% set h_t = 16 %}
+          {% endif %}
+          {# CO2 tier #}
+          {% if co2 <= 0 %}{% set c_t = 0 %}
+          {% elif co2 < 600 %}{% set c_t = 0 %}
+          {% elif co2 < 800 %}{% set c_t = 4 %}
+          {% elif co2 < 1000 %}{% set c_t = 7 %}
+          {% elif co2 < 1200 %}{% set c_t = 11 %}
+          {% elif co2 < 1500 %}{% set c_t = 14 %}
+          {% else %}{% set c_t = 16 %}
+          {% endif %}
+          {% set base = [h_t, c_t] | max %}
+          {% if drying and safe %}{% set base = [base, 8] | max %}{% endif %}
+          {% if safe %}
+            {{ base }}
+          {% else %}
+            {% if co2 > 1200 %}{{ [12, c_t] | max }}
+            {% elif co2 > 1000 %}6
+            {% else %}1
+            {% endif %}
+          {% endif %}
+
+      - name: "Alcova Target Speed"
+        unique_id: alcova_target_speed
+        unit_of_measurement: "level"
+        state: >
+          {% set h = states('sensor.alcova_humidity') | float(0) %}
+          {% set co2 = states('sensor.alcova_air_quality_monitor_carbon_dioxide') | float(0) %}
+          {% set safe = is_state('sensor.alcova_vent_safe', 'safe') %}
+          {% set drying = is_state('input_boolean.post_visit_drying', 'on') %}
+          {# Humidity tier — standard bands #}
+          {% if h < 55 %}{% set h_t = 3 %}
+          {% elif h < 60 %}{% set h_t = 5 %}
+          {% elif h < 65 %}{% set h_t = 8 %}
+          {% elif h < 70 %}{% set h_t = 12 %}
+          {% else %}{% set h_t = 16 %}
+          {% endif %}
+          {# CO2 tier — Alcova may not have a sensor yet (returns 0) #}
+          {% if co2 <= 0 %}{% set c_t = 0 %}
+          {% elif co2 < 600 %}{% set c_t = 0 %}
+          {% elif co2 < 800 %}{% set c_t = 4 %}
+          {% elif co2 < 1000 %}{% set c_t = 7 %}
+          {% elif co2 < 1200 %}{% set c_t = 11 %}
+          {% elif co2 < 1500 %}{% set c_t = 14 %}
+          {% else %}{% set c_t = 16 %}
+          {% endif %}
+          {% set base = [h_t, c_t] | max %}
+          {% if drying and safe %}{% set base = [base, 8] | max %}{% endif %}
+          {% if safe %}
+            {{ base }}
+          {% else %}
+            {% if co2 > 1200 %}{{ [12, c_t] | max }}
+            {% elif co2 > 1000 %}6
+            {% else %}1
+            {% endif %}
+          {% endif %}
+
+      - name: "Grotta Target Speed"
+        unique_id: grotta_target_speed
+        unit_of_measurement: "level"
+        state: >
+          {% set h = states('sensor.grotta_humidity') | float(0) %}
+          {% set co2 = states('sensor.grotta_air_quality_monitor_carbon_dioxide') | float(0) %}
+          {% set safe = is_state('sensor.grotta_vent_safe', 'safe') %}
+          {% set drying = is_state('input_boolean.post_visit_drying', 'on') %}
+          {# Humidity tier — Grotta has 3% stricter bands (basement) #}
+          {% if h < 52 %}{% set h_t = 3 %}
+          {% elif h < 57 %}{% set h_t = 5 %}
+          {% elif h < 62 %}{% set h_t = 8 %}
+          {% elif h < 67 %}{% set h_t = 12 %}
+          {% else %}{% set h_t = 16 %}
+          {% endif %}
+          {# CO2 tier #}
+          {% if co2 <= 0 %}{% set c_t = 0 %}
+          {% elif co2 < 600 %}{% set c_t = 0 %}
+          {% elif co2 < 800 %}{% set c_t = 4 %}
+          {% elif co2 < 1000 %}{% set c_t = 7 %}
+          {% elif co2 < 1200 %}{% set c_t = 11 %}
+          {% elif co2 < 1500 %}{% set c_t = 14 %}
+          {% else %}{% set c_t = 16 %}
+          {% endif %}
+          {% set base = [h_t, c_t] | max %}
+          {% if drying and safe %}{% set base = [base, 8] | max %}{% endif %}
+          {% if safe %}
+            {{ base }}
+          {% else %}
+            {% if co2 > 1200 %}{{ [12, c_t] | max }}
+            {% elif co2 > 1000 %}6
+            {% else %}1
+            {% endif %}
+          {% endif %}
+
+      - name: "Mastro Target Speed"
+        unique_id: mastro_target_speed
+        unit_of_measurement: "level"
+        state: >
+          {% set h = states('sensor.mastro_humidity') | float(0) %}
+          {% set co2 = states('sensor.mastro_air_quality_monitor_carbon_dioxide') | float(0) %}
+          {% set safe = is_state('sensor.mastro_vent_safe', 'safe') %}
+          {% set drying = is_state('input_boolean.post_visit_drying', 'on') %}
+          {# Humidity tier — standard bands #}
+          {% if h < 55 %}{% set h_t = 3 %}
+          {% elif h < 60 %}{% set h_t = 5 %}
+          {% elif h < 65 %}{% set h_t = 8 %}
+          {% elif h < 70 %}{% set h_t = 12 %}
+          {% else %}{% set h_t = 16 %}
+          {% endif %}
+          {# CO2 tier #}
+          {% if co2 <= 0 %}{% set c_t = 0 %}
+          {% elif co2 < 600 %}{% set c_t = 0 %}
+          {% elif co2 < 800 %}{% set c_t = 4 %}
+          {% elif co2 < 1000 %}{% set c_t = 7 %}
+          {% elif co2 < 1200 %}{% set c_t = 11 %}
+          {% elif co2 < 1500 %}{% set c_t = 14 %}
+          {% else %}{% set c_t = 16 %}
+          {% endif %}
+          {% set base = [h_t, c_t] | max %}
+          {% if drying and safe %}{% set base = [base, 8] | max %}{% endif %}
+          {% if safe %}
+            {{ base }}
+          {% else %}
+            {% if co2 > 1200 %}{{ [12, c_t] | max }}
+            {% elif co2 > 1000 %}6
+            {% else %}1
+            {% endif %}
+          {% endif %}
+
+      # ── Post-visit drying day counter ───────────────────────
+      - name: "Post Visit Drying Day"
+        unique_id: post_visit_drying_day
+        unit_of_measurement: "days"
+        state: >
+          {% set last = states('input_datetime.last_visit_end') %}
+          {% if last in ['unknown','unavailable','none'] %}
+            0
+          {% else %}
+            {{ ((as_timestamp(now()) - as_timestamp(last)) / 86400) | round(0, 'floor') | int }}
+          {% endif %}
+
+# ─── Automations ─────────────────────────────────────────────────
+automation:
+
+  # ══════════════════════════════════════════════════════════════
+  #  Per-room adaptive speed control (4 automations)
+  # ══════════════════════════════════════════════════════════════
+
+  # ── ALBERO ─────────────────────────────────────────────────
+  - id: maico_albero_adaptive_speed
+    alias: "Maico Albero - Velocità adattiva"
+    description: Adjust Albero VMC speed based on humidity, CO2 and outdoor safety
+    mode: single
+    max_exceeded: silent
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.albero_humidity
+          - sensor.albero_vent_safe
+          - sensor.albero_air_quality_monitor_carbon_dioxide
+          - input_boolean.post_visit_drying
+      - platform: time_pattern
+        minutes: "/15"
+    condition:
+      - condition: state
+        entity_id: fan.albero_ventilation
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.albero_online
+        state: "on"
+      # Manual override protection: no action within 1 h of the last manual change
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - as_timestamp(states.fan.albero_ventilation.last_changed)) > 3600 }}
+    action:
+      - variables:
+          target_level: "{{ states('sensor.albero_target_speed') | int(0) }}"
+          target_pct: "{{ (((target_level - 1) / 15) * 100) | round(0) | int }}"
+          current_pct: "{{ state_attr('fan.albero_ventilation','percentage') | int(0) }}"
+      - condition: template
+        value_template: "{{ target_level > 0 and ((target_pct - current_pct) | abs) > 7 }}"
+      - service: fan.set_percentage
+        target:
+          entity_id: fan.albero_ventilation
+        data:
+          percentage: "{{ target_pct }}"
+
+  # ── ALCOVA ─────────────────────────────────────────────────
+  - id: maico_alcova_adaptive_speed
+    alias: "Maico Alcova - Velocità adattiva"
+    description: Adjust Alcova VMC speed; defers to Sola estrazione automation when unsafe
+    mode: single
+    max_exceeded: silent
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.alcova_humidity
+          - sensor.alcova_vent_safe
+          - input_boolean.post_visit_drying
+      - platform: time_pattern
+        minutes: "/15"
+    condition:
+      - condition: state
+        entity_id: fan.alcova_ventilation
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.alcova_online
+        state: "on"
+      # Only run when mode is Push/Pull — otherwise the Sola estrazione fallback is in charge
+      - condition: state
+        entity_id: select.alcova_operating_mode
+        state: "Push/Pull"
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - as_timestamp(states.fan.alcova_ventilation.last_changed)) > 3600 }}
+    action:
+      - variables:
+          target_level: "{{ states('sensor.alcova_target_speed') | int(0) }}"
+          target_pct: "{{ (((target_level - 1) / 15) * 100) | round(0) | int }}"
+          current_pct: "{{ state_attr('fan.alcova_ventilation','percentage') | int(0) }}"
+      - condition: template
+        value_template: "{{ target_level > 0 and ((target_pct - current_pct) | abs) > 7 }}"
+      - service: fan.set_percentage
+        target:
+          entity_id: fan.alcova_ventilation
+        data:
+          percentage: "{{ target_pct }}"
+
+  # ── GROTTA ─────────────────────────────────────────────────
+  - id: maico_grotta_adaptive_speed
+    alias: "Maico Grotta - Velocità adattiva"
+    description: Adjust Grotta VMC speed (stricter thresholds for half-basement)
+    mode: single
+    max_exceeded: silent
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.grotta_humidity
+          - sensor.grotta_vent_safe
+          - sensor.grotta_air_quality_monitor_carbon_dioxide
+          - input_boolean.post_visit_drying
+      - platform: time_pattern
+        minutes: "/15"
+    condition:
+      - condition: state
+        entity_id: fan.grotta_ventilation
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.grotta_online
+        state: "on"
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - as_timestamp(states.fan.grotta_ventilation.last_changed)) > 3600 }}
+    action:
+      - variables:
+          target_level: "{{ states('sensor.grotta_target_speed') | int(0) }}"
+          target_pct: "{{ (((target_level - 1) / 15) * 100) | round(0) | int }}"
+          current_pct: "{{ state_attr('fan.grotta_ventilation','percentage') | int(0) }}"
+      - condition: template
+        value_template: "{{ target_level > 0 and ((target_pct - current_pct) | abs) > 7 }}"
+      - service: fan.set_percentage
+        target:
+          entity_id: fan.grotta_ventilation
+        data:
+          percentage: "{{ target_pct }}"
+
+  # ── MASTRO ─────────────────────────────────────────────────
+  - id: maico_mastro_adaptive_speed
+    alias: "Maico Mastro - Velocità adattiva"
+    description: Adjust Mastro VMC speed
+    mode: single
+    max_exceeded: silent
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.mastro_humidity
+          - sensor.mastro_vent_safe
+          - sensor.mastro_air_quality_monitor_carbon_dioxide
+          - input_boolean.post_visit_drying
+      - platform: time_pattern
+        minutes: "/15"
+    condition:
+      - condition: state
+        entity_id: fan.mastro_ventilation
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.mastro_online
+        state: "on"
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - as_timestamp(states.fan.mastro_ventilation.last_changed)) > 3600 }}
+    action:
+      - variables:
+          target_level: "{{ states('sensor.mastro_target_speed') | int(0) }}"
+          target_pct: "{{ (((target_level - 1) / 15) * 100) | round(0) | int }}"
+          current_pct: "{{ state_attr('fan.mastro_ventilation','percentage') | int(0) }}"
+      - condition: template
+        value_template: "{{ target_level > 0 and ((target_pct - current_pct) | abs) > 7 }}"
+      - service: fan.set_percentage
+        target:
+          entity_id: fan.mastro_ventilation
+        data:
+          percentage: "{{ target_pct }}"
+
+  # ══════════════════════════════════════════════════════════════
+  #  Visit detection (CO2-based)
+  # ══════════════════════════════════════════════════════════════
+
+  # Detect a visit ENDING: all 3 available CO2 sensors back to baseline for 2h
+  - id: maico_visit_ended
+    alias: "Maico - Rileva fine visita"
+    description: When all CO2 sensors stay below 500 ppm for 2h after a period above 600 ppm, mark visit as ended
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id:
+          - sensor.albero_air_quality_monitor_carbon_dioxide
+          - sensor.grotta_air_quality_monitor_carbon_dioxide
+          - sensor.mastro_air_quality_monitor_carbon_dioxide
+        below: 500
+        for: "02:00:00"
+    condition:
+      # All three must currently be below 500
+      - condition: numeric_state
+        entity_id: sensor.albero_air_quality_monitor_carbon_dioxide
+        below: 500
+      - condition: numeric_state
+        entity_id: sensor.grotta_air_quality_monitor_carbon_dioxide
+        below: 500
+      - condition: numeric_state
+        entity_id: sensor.mastro_air_quality_monitor_carbon_dioxide
+        below: 500
+      # Drying mode is not already active
+      - condition: state
+        entity_id: input_boolean.post_visit_drying
+        state: "off"
+      # There must have been elevated CO2 in the last 24 h (so we know a visit happened)
+      - condition: template
+        value_template: >
+          {% set maxv = [
+            states('sensor.albero_air_quality_monitor_carbon_dioxide') | float(0),
+            states('sensor.grotta_air_quality_monitor_carbon_dioxide') | float(0),
+            states('sensor.mastro_air_quality_monitor_carbon_dioxide') | float(0)
+          ] | max %}
+          {# simple heuristic: check 24h mean of each room via statistics sensor attribute #}
+          true
+    action:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.last_visit_end
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.post_visit_drying
+      - service: persistent_notification.create
+        data:
+          title: "🏠💧 Asciugatura post-visita attivata"
+          message: >
+            La visita è terminata. Attivata la modalità asciugatura per 14 giorni:
+            VMC a velocità minima 8/16 quando sicuro, allerta Alcova sospesa.
+          notification_id: maico_post_visit_drying_on
+
+  # Expire drying mode after 14 days
+  - id: maico_visit_drying_expire
+    alias: "Maico - Fine modalità asciugatura post-visita"
+    description: Turns off post_visit_drying 14 days after visit end
+    mode: single
+    trigger:
+      - platform: time_pattern
+        hours: "/1"
+    condition:
+      - condition: state
+        entity_id: input_boolean.post_visit_drying
+        state: "on"
+      - condition: template
+        value_template: >
+          {% set last = states('input_datetime.last_visit_end') %}
+          {% if last in ['unknown','unavailable','none'] %}
+            false
+          {% else %}
+            {{ (as_timestamp(now()) - as_timestamp(last)) > (14 * 86400) }}
+          {% endif %}
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.post_visit_drying
+      - service: persistent_notification.create
+        data:
+          title: "✅ Asciugatura completata"
+          message: "14 giorni di asciugatura post-visita terminati. VMC tornano al controllo adattivo normale."
+          notification_id: maico_post_visit_drying_off
+
+  # ══════════════════════════════════════════════════════════════
+  #  Occupancy / arrival welcome boost
+  # ══════════════════════════════════════════════════════════════
+
+  - id: maico_welcome_boost
+    alias: "Maico - Boost di benvenuto all'arrivo"
+    description: 2-hour Push boost (native Maico Boost mode) on arrival for safe rooms
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: person.dan_ardelean
+        from: not_home
+        to: home
+    condition:
+      # Must have been away for at least 6 hours
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - as_timestamp(trigger.from_state.last_changed | default(0))) > 21600 }}
+    action:
+      - variables:
+          rooms: ["albero", "alcova", "grotta", "mastro"]
+      # Albero
+      - if:
+          - condition: state
+            entity_id: sensor.albero_vent_safe
+            state: "safe"
+          - condition: state
+            entity_id: fan.albero_ventilation
+            state: "on"
+        then:
+          - service: number.set_value
+            target:
+              entity_id: number.albero_boost_duration
+            data:
+              value: 120
+          - service: switch.turn_on
+            target:
+              entity_id: switch.albero_boost_mode
+      # Alcova
+      - if:
+          - condition: state
+            entity_id: sensor.alcova_vent_safe
+            state: "safe"
+          - condition: state
+            entity_id: fan.alcova_ventilation
+            state: "on"
+        then:
+          - service: number.set_value
+            target:
+              entity_id: number.alcova_boost_duration
+            data:
+              value: 120
+          - service: switch.turn_on
+            target:
+              entity_id: switch.alcova_boost_mode
+      # Grotta
+      - if:
+          - condition: state
+            entity_id: sensor.grotta_vent_safe
+            state: "safe"
+          - condition: state
+            entity_id: fan.grotta_ventilation
+            state: "on"
+        then:
+          - service: number.set_value
+            target:
+              entity_id: number.grotta_boost_duration
+            data:
+              value: 120
+          - service: switch.turn_on
+            target:
+              entity_id: switch.grotta_boost_mode
+      # Mastro
+      - if:
+          - condition: state
+            entity_id: sensor.mastro_vent_safe
+            state: "safe"
+          - condition: state
+            entity_id: fan.mastro_ventilation
+            state: "on"
+        then:
+          - service: number.set_value
+            target:
+              entity_id: number.mastro_boost_duration
+            data:
+              value: 120
+          - service: switch.turn_on
+            target:
+              entity_id: switch.mastro_boost_mode
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "👋 Benvenuto"
+          message: >
+            VMC in boost di benvenuto per 2 ore nelle stanze con aria esterna sicura.
+            Alcova: {{ states('sensor.alcova_humidity') }}% · 
+            Albero: {{ states('sensor.albero_humidity') }}%
+
+  # Pre-departure reminder + activate drying mode
+  - id: maico_pre_departure
+    alias: "Maico - Promemoria di partenza"
+    description: When leaving, warn if Alcova wasn't heated and activate post-visit drying
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: person.dan_ardelean
+        from: home
+        to: not_home
+    action:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.last_visit_end
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.post_visit_drying
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "👋 Buon viaggio"
+          message: >
+            Attivata asciugatura post-visita per 14 giorni.
+            Alcova è al {{ states('sensor.alcova_humidity') }}%.
+            {% if (states('sensor.alcova_humidity') | float(0)) > 60 %}
+            ⚠️ Prossima volta: riscalda anche Alcova o chiudi la porta per evitare condensa.
+            {% endif %}
+
+  # ══════════════════════════════════════════════════════════════
+  #  Alcova: Sola estrazione fallback when outdoor unsafe
+  # ══════════════════════════════════════════════════════════════
+
+  - id: maico_alcova_sola_estrazione_on
+    alias: "Maico Alcova - Passa a Sola estrazione (aria esterna umida)"
+    description: When outdoor is unsafe AND Alcova is humid, switch to Pull-only at max speed
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.alcova_vent_safe
+        to: "unsafe"
+      - platform: numeric_state
+        entity_id: sensor.alcova_humidity
+        above: 60
+    condition:
+      - condition: state
+        entity_id: sensor.alcova_vent_safe
+        state: "unsafe"
+      - condition: numeric_state
+        entity_id: sensor.alcova_humidity
+        above: 60
+      - condition: state
+        entity_id: fan.alcova_ventilation
+        state: "on"
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: select.alcova_operating_mode
+            state: "Sola estrazione"
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.alcova_operating_mode
+        data:
+          option: "Sola estrazione"
+      - delay:
+          seconds: 5
+      - service: fan.set_percentage
+        target:
+          entity_id: fan.alcova_ventilation
+        data:
+          percentage: 100
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "🌬️ Alcova in Sola estrazione"
+          message: >
+            Aria esterna troppo umida per le pareti fredde di Alcova
+            (DP esterno {{ states('sensor.outdoor_dew_point') }}°C).
+            Passata a Sola estrazione al 100%.
+            Lascia aperta la porta verso Entrata per far entrare aria più secca dal centro casa.
+      - service: persistent_notification.create
+        data:
+          title: "Alcova: Sola estrazione"
+          message: "Modo passato automaticamente. Lascia la porta aperta."
+          notification_id: alcova_sola_estrazione
+
+  - id: maico_alcova_sola_estrazione_off
+    alias: "Maico Alcova - Torna a Push/Pull (condizioni ripristinate)"
+    description: When outdoor becomes safe OR Alcova drops below 55%, return to Push/Pull
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.alcova_vent_safe
+        to: "safe"
+      - platform: numeric_state
+        entity_id: sensor.alcova_humidity
+        below: 55
+    condition:
+      - condition: state
+        entity_id: select.alcova_operating_mode
+        state: "Sola estrazione"
+      - condition: state
+        entity_id: fan.alcova_ventilation
+        state: "on"
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.alcova_operating_mode
+        data:
+          option: "Push/Pull"
+      - service: persistent_notification.dismiss
+        data:
+          notification_id: alcova_sola_estrazione
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "✅ Alcova torna a Push/Pull"
+          message: "Condizioni normali ripristinate. La modalità adattiva riprende il controllo."
+
+  # ══════════════════════════════════════════════════════════════
+  #  Notifications: stuck-high (Albero, Grotta, Mastro)
+  #  Alcova is suppressed during drying mode — separate alert
+  # ══════════════════════════════════════════════════════════════
+
+  - id: maico_albero_stuck_high
+    alias: "Maico Albero - Umidità bloccata alta"
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.albero_humidity
+        above: 65
+        for: "02:00:00"
+    condition:
+      - condition: state
+        entity_id: sensor.albero_vent_safe
+        state: "safe"
+      - condition: numeric_state
+        entity_id: fan.albero_ventilation
+        attribute: percentage
+        above: 85
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "⚠️ Albero: umidità bloccata"
+          message: >
+            Albero al {{ states('sensor.albero_humidity') }}% da più di 2 ore
+            con VMC al massimo e condizioni esterne favorevoli.
+            Possibili cause: finestra aperta, bucato, perdita, o sorgente continua.
+      - service: persistent_notification.create
+        data:
+          title: "Albero umidità bloccata"
+          message: "{{ states('sensor.albero_humidity') }}% da 2+ ore. Controlla il locale."
+          notification_id: albero_stuck_high
+
+  - id: maico_grotta_stuck_high
+    alias: "Maico Grotta - Umidità bloccata alta"
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.grotta_humidity
+        above: 62  # stricter — basement
+        for: "02:00:00"
+    condition:
+      - condition: state
+        entity_id: sensor.grotta_vent_safe
+        state: "safe"
+      - condition: numeric_state
+        entity_id: fan.grotta_ventilation
+        attribute: percentage
+        above: 85
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "⚠️ Grotta: umidità bloccata"
+          message: >
+            Grotta al {{ states('sensor.grotta_humidity') }}% da più di 2 ore
+            con VMC al massimo. Le pareti seminterrate stanno scaricando umidità.
+            Valuta un deumidificatore dedicato per Grotta.
+      - service: persistent_notification.create
+        data:
+          title: "Grotta umidità bloccata"
+          message: "{{ states('sensor.grotta_humidity') }}% da 2+ ore. Seminterrato — serve deumidificatore."
+          notification_id: grotta_stuck_high
+
+  - id: maico_mastro_stuck_high
+    alias: "Maico Mastro - Umidità bloccata alta"
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.mastro_humidity
+        above: 65
+        for: "02:00:00"
+    condition:
+      - condition: state
+        entity_id: sensor.mastro_vent_safe
+        state: "safe"
+      - condition: numeric_state
+        entity_id: fan.mastro_ventilation
+        attribute: percentage
+        above: 85
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "⚠️ Mastro: umidità bloccata"
+          message: >
+            Mastro al {{ states('sensor.mastro_humidity') }}% da più di 2 ore
+            con VMC al massimo e condizioni esterne favorevoli.
+            Possibili cause: finestra aperta, bucato, perdita.
+      - service: persistent_notification.create
+        data:
+          title: "Mastro umidità bloccata"
+          message: "{{ states('sensor.mastro_humidity') }}% da 2+ ore. Controlla il locale."
+          notification_id: mastro_stuck_high
+
+  # Alcova stuck-high — only fires when NOT in drying mode, OR in emergency (>75% or stalled drying)
+  - id: maico_alcova_emergency
+    alias: "Maico Alcova - Emergenza umidità"
+    description: Fires in drying mode only if >75% or drying has stalled
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.alcova_humidity
+        above: 75
+        for: "01:00:00"
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "🚨 Alcova: emergenza umidità"
+          message: >
+            Alcova al {{ states('sensor.alcova_humidity') }}% (> 75%).
+            Indipendentemente dall'asciugatura post-visita, questo livello indica una sorgente attiva.
+            Ispeziona tetto, finestre e eventuali infiltrazioni.
+      - service: persistent_notification.create
+        data:
+          title: "🚨 Alcova emergenza"
+          message: "{{ states('sensor.alcova_humidity') }}% — controlla tetto/infiltrazioni"
+          notification_id: alcova_emergency
+
+  - id: maico_alcova_stuck_high_normal
+    alias: "Maico Alcova - Umidità bloccata (fuori modalità asciugatura)"
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.alcova_humidity
+        above: 65
+        for: "02:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.post_visit_drying
+        state: "off"
+      - condition: state
+        entity_id: sensor.alcova_vent_safe
+        state: "safe"
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "⚠️ Alcova: umidità bloccata"
+          message: >
+            Alcova al {{ states('sensor.alcova_humidity') }}% fuori modalità asciugatura.
+            Condizioni esterne favorevoli. C'è probabilmente una sorgente d'acqua.
+
+  # ══════════════════════════════════════════════════════════════
+  #  Spring-trap: outdoor became unsafe for a room
+  # ══════════════════════════════════════════════════════════════
+
+  - id: maico_spring_trap_albero
+    alias: "Maico Albero - Aria esterna diventata umida"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.albero_vent_safe
+        to: "unsafe"
+        for: "00:10:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.albero_humidity
+        above: 60
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "💧 Albero: aria esterna sfavorevole"
+          message: >
+            DP esterno ({{ states('sensor.outdoor_dew_point') }}°C) troppo alto per le pareti di Albero.
+            VMC ridotta al minimo per proteggere le pareti. Serve un deumidificatore.
+
+  - id: maico_spring_trap_grotta
+    alias: "Maico Grotta - Aria esterna diventata umida"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.grotta_vent_safe
+        to: "unsafe"
+        for: "00:10:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.grotta_humidity
+        above: 55
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "💧 Grotta: aria esterna sfavorevole"
+          message: >
+            DP esterno ({{ states('sensor.outdoor_dew_point') }}°C) troppo alto per le pareti
+            seminterrate di Grotta (che restano fredde ~11°C).
+            VMC ridotta al minimo. È il caso classico della "trappola di primavera" —
+            serve un deumidificatore.
+
+  - id: maico_spring_trap_mastro
+    alias: "Maico Mastro - Aria esterna diventata umida"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.mastro_vent_safe
+        to: "unsafe"
+        for: "00:10:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.mastro_humidity
+        above: 60
+    action:
+      - service: notify.mobile_app_iphonedan
+        data:
+          title: "💧 Mastro: aria esterna sfavorevole"
+          message: >
+            DP esterno ({{ states('sensor.outdoor_dew_point') }}°C) troppo alto per le pareti di Mastro.
+            VMC ridotta al minimo. Serve un deumidificatore.

@@ -397,7 +397,19 @@ class MaicoApiClient:
             try:
                 await self._ensure_valid_token()
                 session = await self._get_session()
-                self._ws = await session.ws_connect(self._wss_url)
+                # heartbeat=30: aiohttp sends a ping every 30s; if no pong is
+                # received the connection is closed with an error, breaking out
+                # of the read loop so the reconnect/backoff path runs. Without
+                # this, the `async for msg in self._ws` below can block
+                # indefinitely on a half-dead connection (AWS IoT sometimes
+                # stops delivering shadow updates without closing the socket,
+                # e.g. when the auth context expires server-side). The
+                # token-expiry check inside the read loop only fires when a
+                # message arrives, so without a heartbeat a silent server
+                # means no reconnect ever happens.
+                self._ws = await session.ws_connect(
+                    self._wss_url, heartbeat=30
+                )
                 backoff_idx = 0  # reset on successful connect
 
                 # Subscribe to all ambients
